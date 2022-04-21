@@ -3,9 +3,14 @@
 
 #include <iostream>
 
+#include "physics.hpp"
+
 int main()
 {
     std::cout << "Hello World!\n";
+
+	Physics physics{};
+	physics.run();
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
