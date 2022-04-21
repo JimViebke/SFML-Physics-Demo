@@ -1,12 +1,25 @@
 #pragma once
 
+#include <sstream>
+
+#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+
+#include "utility.hpp"
+
 namespace detail
 {
+	constexpr size_t window_width = 1500;
+	constexpr size_t window_height = 900;
 
+	const sf::Color background = sf::Color::White;
 }
 
 class Physics
 {
+public:
 	Physics()
 	{
 		sf::ContextSettings settings;
@@ -28,50 +41,14 @@ class Physics
 		}
 
 		overlay.setFont(arial);
-		overlay.setCharacterSize(25);
+		overlay.setCharacterSize(20);
 		overlay.setFillColor(sf::Color::Black);
-		overlay.setPosition({ 20.f, 20.f });
+		overlay.setPosition({ 5.f, 0.f });
 	}
 
 	void on_click()
 	{
-		using namespace detail;
 
-		if (mouse_x > board_x &&
-			mouse_y > board_y &&
-			mouse_x <= board_x + word_length * tile_size_px + (word_length - 1) * tile_padding_px &&
-			mouse_y <= board_y + rows * tile_size_px + (rows - 1) * tile_padding_px)
-		{
-			if (mouse_tile_x > word_length - 1 || mouse_tile_y > rows - 1)
-			{
-				std::cout << "bad coords: " << mouse_tile_x << ", " << mouse_tile_y << std::endl;
-				return;
-			}
-
-			if (board.board[mouse_tile_y].guess[mouse_tile_x].is_blank()) return;
-
-			tile_color& tile_color = board.board[mouse_tile_y].guess[mouse_tile_x].tile_color;
-
-			switch (tile_color)
-			{
-			case tile_color::grey:
-				tile_color = tile_color::yellow;
-				break;
-
-			case tile_color::yellow:
-				tile_color = tile_color::green;
-				break;
-
-			case tile_color::green:
-				// deliberate fallthrough
-
-			default:
-				tile_color = tile_color::grey;
-				break;
-			}
-
-			update_solutions();
-		}
 	}
 	void on_ctrl_c()
 	{
@@ -145,6 +122,12 @@ class Physics
 		event handling or rendering.
 		*/
 
+		++tick_counter;
+
+		std::stringstream ss;
+		ss << mouse_x << ", " << mouse_y << '\n';
+
+		overlay.setString(ss.str());
 	}
 
 	void render()
@@ -168,16 +151,11 @@ class Physics
 
 
 private:
-	size_t frame_counter = 0;
+	size_t tick_counter = 0;
 
 	int32_t mouse_x = 0, mouse_y = 0;
-
-	size_t mouse_tile_x = 0, mouse_tile_y = 0; // the tile under the mouse
 
 	std::unique_ptr<sf::RenderWindow> window;
 	sf::Font arial;
 	sf::Text overlay;
 };
-
-
-
