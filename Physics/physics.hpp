@@ -15,7 +15,18 @@ namespace detail
 	constexpr size_t window_height = 900;
 
 	const sf::Color background = sf::Color::White;
+
+	constexpr float circle_radius_min = 10.f;
+	constexpr float circle_radius_max = 30.f;
 }
+
+class circle
+{
+public:
+	circle(const sf::CircleShape& set_sf_circle) : sf_circle(set_sf_circle) {}
+
+	sf::CircleShape sf_circle;
+};
 
 class Physics
 {
@@ -48,11 +59,27 @@ public:
 
 	void on_click()
 	{
+		sf::CircleShape circle{ 10.f, 30 };
 
+		const float radius = random_float_from(detail::circle_radius_min, detail::circle_radius_max);
+
+		circle.setRadius(radius);
+
+		// scale the radius into a range of 0-255 for color adjustments
+		const uint8_t color_scaling = uint8_t(
+			(radius - detail::circle_radius_min)
+			/ (detail::circle_radius_max - detail::circle_radius_min)
+			* 255.f);
+
+		circle.setFillColor({ 255u - color_scaling, 0, color_scaling });
+
+		circle.setPosition(mouse_x - radius, mouse_y - radius);
+
+		circles.push_back(circle);
 	}
 	void on_ctrl_c()
 	{
-
+		std::vector<circle>().swap(circles);
 	}
 
 	void on_key_pressed(const sf::Event::KeyEvent key)
@@ -125,7 +152,11 @@ public:
 		++tick_counter;
 
 		std::stringstream ss;
-		ss << mouse_x << ", " << mouse_y << '\n';
+		ss << "Create circle: LMB    Erase circles: Ctrl + c \n\n";
+
+		ss << mouse_x << ", " << mouse_y << "\n\n";
+
+		ss << "Circles: " << circles.size() << '\n';
 
 		overlay.setString(ss.str());
 	}
@@ -133,6 +164,11 @@ public:
 	void render()
 	{
 		window->clear(detail::background);
+
+		for (auto& circle : circles)
+		{
+			window->draw(circle.sf_circle);
+		}
 
 		window->draw(overlay);
 	}
@@ -149,7 +185,6 @@ public:
 		}
 	}
 
-
 private:
 	size_t tick_counter = 0;
 
@@ -158,4 +193,6 @@ private:
 	std::unique_ptr<sf::RenderWindow> window;
 	sf::Font arial;
 	sf::Text overlay;
+
+	std::vector<circle> circles;
 };
