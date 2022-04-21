@@ -8,6 +8,11 @@ size_t random_int_from(const size_t min, const size_t max)
 	return min + (rand() % (max - min + 1));
 }
 
+float random_float_from(const float min, const float max)
+{
+	return (((float)rand() / RAND_MAX) * (max - min)) + min;
+}
+
 template<class C, class T>
 auto contains(const C& v, const T& x)
 -> decltype(end(v), true)
