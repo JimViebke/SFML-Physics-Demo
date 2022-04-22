@@ -3,6 +3,20 @@
 #include <vector>
 #include <chrono>
 
+#include <SFML/Graphics.hpp>
+
+float distance_between(const float x1, const float y1, const float x2, const float y2)
+{
+	const float x_diff = x1 - x2;
+	const float y_diff = y1 - y2;
+	return sqrt(x_diff * x_diff + y_diff * y_diff);
+}
+
+float distance_between(const sf::Vector2f point_a, const sf::Vector2f point_b)
+{
+	return distance_between(point_a.x, point_a.y, point_b.x, point_b.y);
+}
+
 size_t random_int_from(const size_t min, const size_t max)
 {
 	return min + (rand() % (max - min + 1));
