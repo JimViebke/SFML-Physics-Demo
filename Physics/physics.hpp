@@ -19,7 +19,7 @@ namespace detail
 
 	const sf::Vector2f gravity{ 0.f, 500.f };
 
-	const float repulsion_force = 0.1f; // default 0.5;
+	const float repulsion_force = 0.5f; // Default is 0.5; less is bouncier.
 
 	const float circle_radius_min = 5.f;
 	const float circle_radius_max = 30.f;
@@ -152,15 +152,6 @@ private:
 
 		if (rmb_pressed && !lmb_pressed) // dragging with right button only
 		{
-			for (auto it = circles.begin(); it != circles.end(); ++it)
-			{
-				if (distance_between(it->position(), mouse_pos) < it->radius())
-				{
-					circles.erase(it);
-					break; // mouse only removes one circle at a time
-				}
-			}
-
 			erase_barrier();
 		}
 	}
@@ -303,30 +294,27 @@ private:
 
 	void try_spawn_circle()
 	{
-		sf::CircleShape sf_circle{ 10.f, 30 };
+		const sf::Vector2f spawn_point = { detail::window_width *.6f, 50.f };
 
-		const float radius = random_float_from(detail::circle_radius_min, detail::circle_radius_max);
-		sf_circle.setRadius(radius);
-		sf_circle.setOrigin(radius, radius); // never perform corrections anywhere else! :D
-		sf_circle.setPosition(mouse_pos);
+		sf::CircleShape sf_circle{ detail::circle_radius_max, 30 };
+		sf_circle.setOrigin(detail::circle_radius_max, detail::circle_radius_max);
+		sf_circle.setPosition(spawn_point);
 
-		apply_constraint(sf_circle); // make sure it's in bounds
-		circle circle{ sf_circle };
-
-		// The circle is in the right place - now re-use the original sf_circle...
-		sf_circle.setRadius(detail::circle_radius_max);
-		sf_circle.setPosition(mouse_pos);
-		apply_constraint(sf_circle);
-
-		// ...to make sure a circle of any size could spawn from the mouse's position
+		// make sure a circle of any size could spawn here
 		for (size_t i = 0; i < circles.size(); ++i)
 		{
-			if (distance_between(circles[i].position(), circle.position())
+			if (distance_between(circles[i].position(), sf_circle.getPosition())
 				< circles[i].radius() + detail::circle_radius_max)
 			{
 				return; // fail silently
 			}
 		}
+
+		// configure this circle correctly now
+		const float radius = random_float_from(detail::circle_radius_min, detail::circle_radius_max);
+		sf_circle.setRadius(radius);
+		sf_circle.setOrigin(radius, radius); // never perform corrections anywhere else! :D
+		sf_circle.setPosition(spawn_point);
 
 		// The size of the circle determines the color (min: 255,0,0 max: 0,0,255)
 		// Bigger circle = less red and more blue
@@ -335,17 +323,14 @@ private:
 			/ (detail::circle_radius_max - detail::circle_radius_min)
 			* 255.f);
 
-		circle.sf_circle.setFillColor({ 255u - color_scaling, 0, color_scaling });
+		sf_circle.setFillColor({ 255u - color_scaling, 0, color_scaling });
 
-		circles.push_back(circle);
+		circles.push_back(circle{ sf_circle });
 	}
 
 	void process_mouse_state()
 	{
-		if (lmb_pressed)
-		{
-			try_spawn_circle();
-		}
+
 	}
 
 	void apply_gravity()
@@ -382,9 +367,54 @@ private:
 
 	void apply_constraints()
 	{
-		for (auto& circle : circles)
+		//for (auto& circle : circles)
+		//{
+		//	apply_constraint(circle.sf_circle);
+		//}
+	}
+
+	void clear_fallen_circles()
+	{
+		for (auto it = circles.begin(); it != circles.cend(); )
 		{
-			apply_constraint(circle.sf_circle);
+			if (it->position().y > detail::window_height + detail::circle_radius_max + 100.f)
+			{
+				circles.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
+	void resolve_circle_to_circle_collision(circle& c1, circle& c2)
+	{
+		const sf::Vector2f collision_axis = c1.position() - c2.position();
+		const float distance = distance_between(c1.position(), c2.position());
+		const float radii = c1.radius() + c2.radius();
+
+		// if the circles are overlapping
+		if (distance < radii)
+		{
+			const sf::Vector2f n = collision_axis / distance;
+			const float delta = radii - distance;
+			c1.sf_circle.setPosition(c1.position() + detail::repulsion_force * delta * n);
+			c2.sf_circle.setPosition(c2.position() - detail::repulsion_force * delta * n);
+		}
+	}
+
+	void resolve_circle_to_point_collision(circle& c, const sf::Vector2f& p)
+	{
+		const sf::Vector2f collision_axis = c.position() - p;
+		const float distance = distance_between(c.position(), p);
+
+		// if the circle overlaps the point
+		if (distance < c.radius())
+		{
+			const sf::Vector2f n = collision_axis / distance;
+			const float delta = c.radius() - distance;
+			c.sf_circle.setPosition(c.position() + detail::repulsion_force * delta * n);
 		}
 	}
 
@@ -394,21 +424,27 @@ private:
 		{
 			for (size_t j = i + 1; j < circles.size(); ++j)
 			{
-				circle& c1 = circles[i];
-				circle& c2 = circles[j];
+				resolve_circle_to_circle_collision(circles[i], circles[j]);
+			}
+		}
 
-				const sf::Vector2f collision_axis = c1.position() - c2.position();
-				const float distance = distance_between(c1.position(), c2.position());
-				const float radii = c1.radius() + c2.radius();
+		for (auto& circle : circles)
+		{
+			for (auto& barrier : barriers)
+			{
+				float w = barrier.getSize().x;
+				float h = barrier.getSize().y;
 
-				// if the circles are overlapping
-				if (distance < radii)
-				{
-					const sf::Vector2f n = collision_axis / distance;
-					const float delta = radii - distance;
-					c1.sf_circle.setPosition(c1.position() + detail::repulsion_force * delta * n);
-					c2.sf_circle.setPosition(c2.position() - detail::repulsion_force * delta * n);
-				}
+				sf::Vector2f a = barrier.getTransform().transformPoint(0.f, 0.f);
+				sf::Vector2f b = barrier.getTransform().transformPoint(w, 0.f);
+				sf::Vector2f c = barrier.getTransform().transformPoint(0.f, h);
+				sf::Vector2f d = barrier.getTransform().transformPoint(w, h);
+
+				auto side_1 = get_closest_point(a, b, circle.position());
+				auto side_2 = get_closest_point(c, d, circle.position());
+
+				resolve_circle_to_point_collision(circle, side_1);
+				resolve_circle_to_point_collision(circle, side_2);
 			}
 		}
 	}
@@ -416,7 +452,6 @@ private:
 	void tick_physics()
 	{
 		apply_gravity();
-		apply_constraints();
 		resolve_collisions();
 		update_positions(detail::time_step);
 	}
@@ -430,7 +465,9 @@ private:
 		++tick_counter;
 
 		process_mouse_state();
+		try_spawn_circle();
 		tick_physics();
+		clear_fallen_circles();
 
 		std::stringstream ss;
 		ss << "Create barrier: left mouse button    Cancel/erase: right mouse button    Erase all circles: ctrl + c \n\n";
@@ -458,8 +495,6 @@ private:
 		{
 			window->draw(new_barrier);
 		}
-
-		window->draw(pointer_click_helper);
 
 		window->draw(overlay);
 	}
