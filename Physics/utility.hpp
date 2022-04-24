@@ -76,3 +76,17 @@ bool is_point_in_rectangle(sf::Vector2f p, const sf::RectangleShape rect)
 		is_point_in_triangle(p, a, b, c) ||
 		is_point_in_triangle(p, b, c, d);
 }
+
+sf::Vector2f get_closest_point(sf::Vector2f a, sf::Vector2f b, sf::Vector2f p)
+{
+	auto ab = b - a;
+	auto ap = p - a;
+	float t = (ap.x * ab.x + ap.y * ab.y) / (ab.x * ab.x + ab.y * ab.y);
+
+	// clamp to convert from line a<->b to segment a-b
+	if (t < 0.f) { t = 0.f; }
+	if (t > 1.f) { t = 1.f; }
+
+	return t * ab + a;
+
+}
