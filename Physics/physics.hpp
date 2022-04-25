@@ -5,69 +5,14 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+
 #include "utility.hpp"
-
-namespace detail
-{
-	const size_t window_width = 1500;
-	const size_t window_height = 900;
-
-	const sf::Color background = sf::Color::White;
-
-	const size_t framerate = 144;
-	const float time_step = 1.f / framerate;
-
-	const sf::Vector2f gravity{ 0.f, 500.f };
-
-	const float repulsion_force = 0.5f; // Default is 0.5; less is bouncier.
-
-	const float circle_radius_min = 5.f;
-	const float circle_radius_max = 30.f;
-
-	const sf::Color new_barrier_color = { 0, 0, 0, 255 / 2 };
-	const sf::Color barrier_color = { 0, 0, 0, 255 };
-	const float barrier_thickness = 7.5f;
-	const float min_barrier_length = barrier_thickness;
-}
-
-class circle
-{
-public:
-	circle(const sf::CircleShape& set_sf_circle) : sf_circle(set_sf_circle)
-	{
-		previous_position = sf_circle.getPosition();
-	}
-
-	// call for each effect
-	void accelerate(const sf::Vector2f update) { acceleration += update; }
-
-	void reset_velocity() { previous_position = sf_circle.getPosition(); }
-
-	// call once per time step
-	void update_position(const float dt)
-	{
-		const auto pos = sf_circle.getPosition();
-		const auto velocity = pos - previous_position;
-
-		previous_position = pos;
-
-		// apply velocity and acceleration
-		sf_circle.setPosition(sf_circle.getPosition() + velocity + acceleration * dt * dt);
-
-		// reset
-		acceleration = sf::Vector2f();
-	}
-
-	sf::Vector2f position() const { return sf_circle.getPosition(); }
-	float radius() const { return sf_circle.getRadius(); }
-
-	sf::CircleShape sf_circle;
-
-private:
-
-	sf::Vector2f previous_position;
-	sf::Vector2f acceleration;
-};
+#include "detail.hpp"
+#include "circle.hpp"
+#include "barrier.hpp"
 
 float distance_between(const circle& c1, const circle& c2)
 {
@@ -107,9 +52,6 @@ public:
 		pointer_click_helper.setFillColor({ 0, 0, 0, 255 / 2 });
 		pointer_click_helper.setPosition({ -100.f, -100.f });
 
-		new_barrier.setOrigin({ 0.f, detail::barrier_thickness / 2.f });
-		new_barrier.setFillColor(detail::new_barrier_color);
-
 		overlay.setFont(arial);
 		overlay.setCharacterSize(20);
 		overlay.setFillColor(sf::Color::Black);
@@ -122,7 +64,7 @@ private:
 	{
 		for (auto it = barriers.begin(); it != barriers.end(); ++it)
 		{
-			if (is_point_in_rectangle(mouse_pos, *it))
+			if (it->is_mouse_over(mouse_pos))
 			{
 				barriers.erase(it);
 				return; // mouse only removes one barrier at a time
@@ -132,9 +74,7 @@ private:
 
 	void reset_new_barrier()
 	{
-		new_barrier.setSize({ 0.f, 0.f });
-		new_barrier.setPosition({ -1.f, -1.f });
-
+		new_barrier.reset();
 		drawing_barrier = false;
 	}
 
@@ -142,12 +82,7 @@ private:
 	{
 		if (drawing_barrier)
 		{
-			const auto a = mouse_clicked_pos;
-			const auto b = mouse_pos;
-
-			new_barrier.setSize({ distance_between(a, b), detail::barrier_thickness });
-			new_barrier.setPosition(a);
-			new_barrier.setRotation(atan2(b.y - a.y, b.x - a.x) * 180.f / (float)M_PI);
+			new_barrier.set_position(mouse_clicked_pos, mouse_pos);
 		}
 
 		if (rmb_pressed && !lmb_pressed) // dragging with right button only
@@ -170,10 +105,10 @@ private:
 
 		if (drawing_barrier)
 		{
-			if (new_barrier.getSize().x >= detail::min_barrier_length)
+			if (new_barrier.has_valid_length())
 			{
 				barriers.push_back(new_barrier);
-				barriers.back().setFillColor(detail::barrier_color);
+				barriers.back().set_to_default_color();
 			}
 
 			reset_new_barrier();
@@ -264,33 +199,7 @@ private:
 		}
 	}
 
-	void draw_line(sf::Vector2f a, sf::Vector2f b, sf::RenderWindow& window,
-		const float width = 2.f, const sf::Color color = sf::Color::Red)
-	{
-		sf::RectangleShape line(sf::Vector2f(::distance_between(a, b), width));
-		line.setPosition(a);
-		line.setFillColor(color);
-		line.setOrigin({ 0, width / 2 });
-		line.rotate(atan2(b.y - a.y, b.x - a.x) * 180.f / (float)M_PI);
 
-		window.draw(line);
-	}
-
-	void draw_box(const size_t x, const size_t y, const size_t width, const size_t height, const sf::Color color,
-		bool outline = false, const sf::Color outline_color = sf::Color::Black, const float outline_thickness = -2.f)
-	{
-		sf::RectangleShape box{ { (float)width, (float)height } };
-		box.setPosition({ (float)x, (float)y });
-		box.setFillColor(color);
-
-		if (outline)
-		{
-			box.setOutlineColor(outline_color);
-			box.setOutlineThickness(outline_thickness);
-		}
-
-		window->draw(box);
-	}
 
 	void try_spawn_circle()
 	{
@@ -404,7 +313,8 @@ private:
 		}
 	}
 
-	void resolve_circle_to_point_collision(circle& c, const sf::Vector2f& p)
+	// Returns true if there was a collision; otherwise false
+	bool resolve_circle_to_point_collision(circle& c, const sf::Vector2f& p)
 	{
 		const sf::Vector2f collision_axis = c.position() - p;
 		const float distance = distance_between(c.position(), p);
@@ -415,7 +325,11 @@ private:
 			const sf::Vector2f n = collision_axis / distance;
 			const float delta = c.radius() - distance;
 			c.sf_circle.setPosition(c.position() + detail::repulsion_force * delta * n);
+
+			return true;
 		}
+
+		return false;
 	}
 
 	void resolve_collisions()
@@ -432,19 +346,27 @@ private:
 		{
 			for (auto& barrier : barriers)
 			{
-				float w = barrier.getSize().x;
-				float h = barrier.getSize().y;
+				float w = barrier.get_size().x;
+				float h = barrier.get_size().y;
 
-				sf::Vector2f a = barrier.getTransform().transformPoint(0.f, 0.f);
-				sf::Vector2f b = barrier.getTransform().transformPoint(w, 0.f);
-				sf::Vector2f c = barrier.getTransform().transformPoint(0.f, h);
-				sf::Vector2f d = barrier.getTransform().transformPoint(w, h);
+				const auto transform = barrier.get_transform();
+
+				sf::Vector2f a = transform.transformPoint(0.f, 0.f);
+				sf::Vector2f b = transform.transformPoint(w, 0.f);
+				sf::Vector2f c = transform.transformPoint(0.f, h);
+				sf::Vector2f d = transform.transformPoint(w, h);
 
 				auto side_1 = get_closest_point(a, b, circle.position());
 				auto side_2 = get_closest_point(c, d, circle.position());
 
-				resolve_circle_to_point_collision(circle, side_1);
-				resolve_circle_to_point_collision(circle, side_2);
+				// Only do collision against the rounded end caps of a barrier if a circle did not interact with the length of the barrier
+				if (resolve_circle_to_point_collision(circle, side_1)) continue;
+
+				if (resolve_circle_to_point_collision(circle, side_2)) continue;
+
+				// if (resolve circle_to_rigid_circle_collision(end_1)) continue;
+
+				// if (resolve circle_to_rigid_circle_collision(end_2)) continue;
 			}
 		}
 	}
@@ -488,12 +410,12 @@ private:
 
 		for (auto& barrier : barriers)
 		{
-			window->draw(barrier);
+			barrier.draw(*window);
 		}
 
 		if (lmb_pressed)
 		{
-			window->draw(new_barrier);
+			new_barrier.draw(*window);
 		}
 
 		window->draw(overlay);
@@ -523,8 +445,8 @@ private:
 
 	sf::CircleShape pointer_click_helper;
 
-	sf::RectangleShape new_barrier;
-	std::vector<sf::RectangleShape> barriers;
+	barrier new_barrier;
+	std::vector<barrier> barriers;
 	bool drawing_barrier = false;
 
 	std::unique_ptr<sf::RenderWindow> window;

@@ -92,9 +92,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="barrier.hpp" />
     <ClCompile Include="physics.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="circle.hpp" />
+    <ClInclude Include="detail.hpp" />
     <ClInclude Include="physics.hpp" />
     <ClInclude Include="utility.hpp" />
   </ItemGroup>

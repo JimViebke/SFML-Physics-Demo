@@ -90,3 +90,31 @@ sf::Vector2f get_closest_point(sf::Vector2f a, sf::Vector2f b, sf::Vector2f p)
 	return t * ab + a;
 
 }
+
+void draw_line(sf::RenderWindow& window, sf::Vector2f a, sf::Vector2f b,
+	const float width = 2.f, const sf::Color color = sf::Color::Red)
+{
+	sf::RectangleShape line(sf::Vector2f(::distance_between(a, b), width));
+	line.setPosition(a);
+	line.setFillColor(color);
+	line.setOrigin({ 0, width / 2 });
+	line.rotate(atan2(b.y - a.y, b.x - a.x) * 180.f / (float)M_PI);
+
+	window.draw(line);
+}
+
+void draw_box(sf::RenderWindow& window, const size_t x, const size_t y, const size_t width, const size_t height, const sf::Color color,
+	bool outline = false, const sf::Color outline_color = sf::Color::Black, const float outline_thickness = -2.f)
+{
+	sf::RectangleShape box{ { (float)width, (float)height } };
+	box.setPosition({ (float)x, (float)y });
+	box.setFillColor(color);
+
+	if (outline)
+	{
+		box.setOutlineColor(outline_color);
+		box.setOutlineThickness(outline_thickness);
+	}
+
+	window.draw(box);
+}
