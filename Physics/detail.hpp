@@ -14,13 +14,13 @@ namespace detail
 
 	const sf::Vector2f gravity{ 0.f, 500.f };
 
-	const float repulsion_force = 0.5f; // Default is 0.5; less is bouncier.
+	const float repulsion_force = 0.5f; // default is 0.5f; less is bouncier
 
 	const float circle_radius_min = 5.f;
 	const float circle_radius_max = 30.f;
 
 	const sf::Color new_barrier_color = { 0, 0, 0, 255 / 2 };
 	const sf::Color barrier_color = { 0, 0, 0, 255 };
-	const float barrier_thickness = 7.5f;
+	const float barrier_thickness = 10.f; // default is 7.5f
 	const float min_barrier_length = barrier_thickness;
 }

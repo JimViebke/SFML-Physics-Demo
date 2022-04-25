@@ -79,6 +79,9 @@ public:
 		middle_part.setPosition({ -1.f, -1.f });
 	}
 
+	const sf::CircleShape& get_end_1() const { return end_1; }
+	const sf::CircleShape& get_end_2() const { return end_2; }
+
 private:
 	sf::RectangleShape middle_part; // for lack of a better name
 

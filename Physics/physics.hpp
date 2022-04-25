@@ -313,6 +313,25 @@ private:
 		}
 	}
 
+	bool resolve_circle_to_rigid_circle_collision(circle& c1, const circle& c2)
+	{
+		const sf::Vector2f collision_axis = c1.position() - c2.position();
+		const float distance = distance_between(c1.position(), c2.position());
+		const float radii = c1.radius() + c2.radius();
+
+		// if the circles are overlapping
+		if (distance < radii)
+		{
+			const sf::Vector2f n = collision_axis / distance;
+			const float delta = radii - distance;
+			c1.sf_circle.setPosition(c1.position() + detail::repulsion_force * delta * n);
+
+			return true;
+		}
+
+		return false;
+	}
+
 	// Returns true if there was a collision; otherwise false
 	bool resolve_circle_to_point_collision(circle& c, const sf::Vector2f& p)
 	{
@@ -350,23 +369,22 @@ private:
 				float h = barrier.get_size().y;
 
 				const auto transform = barrier.get_transform();
-
 				sf::Vector2f a = transform.transformPoint(0.f, 0.f);
 				sf::Vector2f b = transform.transformPoint(w, 0.f);
 				sf::Vector2f c = transform.transformPoint(0.f, h);
 				sf::Vector2f d = transform.transformPoint(w, h);
 
-				auto side_1 = get_closest_point(a, b, circle.position());
-				auto side_2 = get_closest_point(c, d, circle.position());
+				const auto side_1 = get_closest_point(a, b, circle.position());
+				const auto side_2 = get_closest_point(c, d, circle.position());
 
 				// Only do collision against the rounded end caps of a barrier if a circle did not interact with the length of the barrier
 				if (resolve_circle_to_point_collision(circle, side_1)) continue;
 
 				if (resolve_circle_to_point_collision(circle, side_2)) continue;
 
-				// if (resolve circle_to_rigid_circle_collision(end_1)) continue;
+				if (resolve_circle_to_rigid_circle_collision(circle, barrier.get_end_1())) continue;
 
-				// if (resolve circle_to_rigid_circle_collision(end_2)) continue;
+				if (resolve_circle_to_rigid_circle_collision(circle, barrier.get_end_2())) continue; // this doesn't need to be in an "if"
 			}
 		}
 	}
@@ -413,7 +431,7 @@ private:
 			barrier.draw(*window);
 		}
 
-		if (lmb_pressed)
+		if (drawing_barrier)
 		{
 			new_barrier.draw(*window);
 		}
