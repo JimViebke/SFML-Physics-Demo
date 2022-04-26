@@ -62,12 +62,12 @@ private:
 
 	void erase_barrier()
 	{
-		for (auto it = barriers.begin(); it != barriers.end(); ++it)
+		for (auto it = barriers.cbegin(); it != barriers.cend(); ++it)
 		{
 			if (it->is_mouse_over(mouse_pos))
 			{
 				barriers.erase(it);
-				return; // mouse only removes one barrier at a time
+				return; // mouse only removes one barrier at a time	
 			}
 		}
 	}
@@ -284,11 +284,11 @@ private:
 
 	void clear_fallen_circles()
 	{
-		for (auto it = circles.begin(); it != circles.cend(); )
+		for (auto it = circles.cbegin(); it != circles.cend(); )
 		{
 			if (it->position().y > detail::window_height + detail::circle_radius_max + 100.f)
 			{
-				circles.erase(it);
+				it = circles.erase(it);
 			}
 			else
 			{
