@@ -31,7 +31,7 @@ public:
 	{
 		const auto distance = distance_between(a, b);
 
-		middle_part.setSize({ distance , detail::barrier_thickness });
+		middle_part.setSize({ distance, detail::barrier_thickness });
 		middle_part.setPosition(a);
 		middle_part.setRotation(atan2(b.y - a.y, b.x - a.x) * 180.f / (float)M_PI);
 

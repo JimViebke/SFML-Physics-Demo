@@ -98,6 +98,8 @@ private:
 		mouse_clicked_pos = mouse_pos;
 
 		drawing_barrier = true;
+
+		new_barrier.set_position(mouse_clicked_pos, mouse_pos);
 	}
 	void on_lmb_release()
 	{
@@ -119,14 +121,15 @@ private:
 	{
 		rmb_pressed = true;
 
-		if (!lmb_pressed) // if the other mouse button is not pressed
-		{
-			erase_barrier();
-		}
-
 		if (lmb_pressed)
 		{
+			// cancel drawing of the new barrier
 			reset_new_barrier();
+		}
+		else
+		{
+			// erase an existing barrier
+			erase_barrier();
 		}
 	}
 	void on_rmb_release()
@@ -203,7 +206,7 @@ private:
 
 	void try_spawn_circle()
 	{
-		const sf::Vector2f spawn_point = { detail::window_width *.6f, 50.f };
+		const sf::Vector2f spawn_point = { detail::window_width * .6f, 50.f };
 
 		sf::CircleShape sf_circle{ detail::circle_radius_max, 30 };
 		sf_circle.setOrigin(detail::circle_radius_max, detail::circle_radius_max);
