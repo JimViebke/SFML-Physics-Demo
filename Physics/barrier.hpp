@@ -20,11 +20,11 @@ public:
 
 		end_1.setRadius(half_barrier_thickness);
 		end_1.setOrigin(half_barrier_thickness, half_barrier_thickness);
-		end_1.setFillColor(detail::barrier_color);
+		end_1.setFillColor(detail::barrier_endcap_color);
 
 		end_2.setRadius(half_barrier_thickness);
 		end_2.setOrigin(half_barrier_thickness, half_barrier_thickness);
-		end_2.setFillColor(detail::barrier_color);
+		end_2.setFillColor(detail::barrier_endcap_color);
 	}
 
 	void set_position(sf::Vector2f& a, sf::Vector2f& b)

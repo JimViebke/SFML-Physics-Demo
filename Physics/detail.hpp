@@ -21,6 +21,7 @@ namespace detail
 
 	const sf::Color new_barrier_color = { 0, 0, 0, 255 / 2 };
 	const sf::Color barrier_color = { 0, 0, 0, 255 };
+	const sf::Color barrier_endcap_color = barrier_color;
 	const float barrier_thickness = 10.f; // default is 7.5f
 	const float min_barrier_length = barrier_thickness;
 }
