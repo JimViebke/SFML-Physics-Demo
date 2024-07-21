@@ -164,40 +164,40 @@ private:
 		{
 			switch (event.type)
 			{
-			case sf::Event::MouseMoved:
-				mouse_pos = { (float)event.mouseMove.x, (float)event.mouseMove.y };
-				on_mouse_moved();
-				break;
+				case sf::Event::MouseMoved:
+					mouse_pos = { (float)event.mouseMove.x, (float)event.mouseMove.y };
+					on_mouse_moved();
+					break;
 
-			case sf::Event::MouseButtonPressed:
-				if (event.mouseButton.button == sf::Mouse::Button::Left)
-				{
-					on_lmb_click();
-				}
-				else if (event.mouseButton.button == sf::Mouse::Button::Right)
-				{
-					on_rmb_click();
-				}
-				break;
+				case sf::Event::MouseButtonPressed:
+					if (event.mouseButton.button == sf::Mouse::Button::Left)
+					{
+						on_lmb_click();
+					}
+					else if (event.mouseButton.button == sf::Mouse::Button::Right)
+					{
+						on_rmb_click();
+					}
+					break;
 
-			case sf::Event::MouseButtonReleased:
-				if (event.mouseButton.button == sf::Mouse::Button::Left)
-				{
-					on_lmb_release();
-				}
-				else if (event.mouseButton.button == sf::Mouse::Button::Right)
-				{
-					on_rmb_release();
-				}
-				break;
+				case sf::Event::MouseButtonReleased:
+					if (event.mouseButton.button == sf::Mouse::Button::Left)
+					{
+						on_lmb_release();
+					}
+					else if (event.mouseButton.button == sf::Mouse::Button::Right)
+					{
+						on_rmb_release();
+					}
+					break;
 
-			case sf::Event::KeyPressed:
-				on_key_pressed(event.key);
-				break;
+				case sf::Event::KeyPressed:
+					on_key_pressed(event.key);
+					break;
 
-			case sf::Event::Closed:
-				window->close();
-				break;
+				case sf::Event::Closed:
+					window->close();
+					break;
 			}
 		}
 	}
@@ -235,7 +235,7 @@ private:
 			/ (detail::circle_radius_max - detail::circle_radius_min)
 			* 255.f);
 
-		sf_circle.setFillColor({ 255u - color_scaling, 0, color_scaling });
+		sf_circle.setFillColor({ uint8_t(255u - color_scaling), 0, color_scaling });
 
 		circles.push_back(circle{ sf_circle });
 	}
